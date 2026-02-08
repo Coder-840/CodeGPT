@@ -1,31 +1,23 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
-from src.model import TinyLlamaModel
-from src.prompts import SYSTEM_PROMPT
+MODEL_NAME = "TheBloke/tiny-llama-7B-GPTQ"  # Tiny 8-bit quantized version
 
-app = FastAPI()
-model = TinyLlamaModel()
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = None
 
-class ChatRequest(BaseModel):
-    message: str
+def load_model():
+    global model
+    if model is None:
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME,
+            device_map="auto",
+            load_in_8bit=True
+        )
+    return model
 
-@app.get("/", response_class=HTMLResponse)
-def index():
-    with open("frontend/index.html", "r", encoding="utf-8") as f:
-        return f.read()
-
-@app.post("/chat")
-def chat(req: ChatRequest):
-    prompt = f"""
-{SYSTEM_PROMPT}
-
-User:
-{req.message}
-
-Assistant:
-"""
-    output = model.generate(prompt)
-    response = output.split("Assistant:")[-1].strip()
-    return {"response": response}
+def generate(prompt, max_length=256):
+    model = load_model()
+    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    outputs = model.generate(**inputs, max_length=max_length)
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
