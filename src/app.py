@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 import os
-from rnn import CharRNN
+from src.rnn import CharRNN
 import numpy as np
 
 app = Flask(__name__, template_folder="../frontend")
