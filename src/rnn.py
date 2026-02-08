@@ -2,22 +2,21 @@ import numpy as np
 
 class CharRNN:
     """
-    Minimal character-level RNN from scratch with online learning.
+    Character-level RNN that learns online.
     """
     def __init__(self, vocab=None, hidden_size=128, learning_rate=1e-1):
         self.hidden_size = hidden_size
         self.learning_rate = learning_rate
 
-        # Vocabulary
         if vocab is None:
             self.vocab = []
         else:
             self.vocab = list(vocab)
+
         self.char_to_ix = {c:i for i,c in enumerate(self.vocab)}
         self.ix_to_char = {i:c for i,c in enumerate(self.vocab)}
         self.vocab_size = len(self.vocab)
 
-        # Model parameters (initialize if vocab exists)
         if self.vocab_size > 0:
             self._init_weights()
         else:
@@ -49,19 +48,16 @@ class CharRNN:
         xs, hs, ys, ps = {}, {}, {}, {}
         hs[-1] = np.copy(hprev)
         loss = 0
-
-        # Forward
         for t in range(len(inputs)):
             xs[t] = np.zeros((self.vocab_size,1))
             xs[t][inputs[t]] = 1
             hs[t] = np.tanh(np.dot(self.Wxh, xs[t]) + np.dot(self.Whh, hs[t-1]) + self.bh)
             ys[t] = np.dot(self.Why, hs[t]) + self.by
-            ps[t] = np.exp(ys[t]) / np.sum(np.exp(ys[t]))
+            ps[t] = np.exp(ys[t])/np.sum(np.exp(ys[t]))
             loss += -np.log(ps[t][targets[t],0]+1e-8)
 
-        # Backward
-        dWxh, dWhh, dWhy = np.zeros_like(self.Wxh), np.zeros_like(self.Whh), np.zeros_like(self.Why)
-        dbh, dby = np.zeros_like(self.bh), np.zeros_like(self.by)
+        dWxh,dWhh,dWhy = np.zeros_like(self.Wxh), np.zeros_like(self.Whh), np.zeros_like(self.Why)
+        dbh,dby = np.zeros_like(self.bh), np.zeros_like(self.by)
         dhnext = np.zeros_like(hs[0])
 
         for t in reversed(range(len(inputs))):
@@ -76,11 +72,10 @@ class CharRNN:
             dWhh += np.dot(dhraw, hs[t-1].T)
             dhnext = np.dot(self.Whh.T, dhraw)
 
-        # Clip
         for dparam in [dWxh,dWhh,dWhy,dbh,dby]:
-            np.clip(dparam, -5,5, out=dparam)
+            np.clip(dparam, -5,5,out=dparam)
 
-        return loss, dWxh, dWhh, dWhy, dbh, dby, hs[len(inputs)-1]
+        return loss,dWxh,dWhh,dWhy,dbh,dby,hs[len(inputs)-1]
 
     def sample(self, seed_idx, n, h=None):
         if h is None:
@@ -104,23 +99,22 @@ class CharRNN:
         targets = [self.char_to_ix[c] for c in text[1:]]
         if hprev is None:
             hprev = np.zeros((self.hidden_size,1))
-        loss, dWxh,dWhh,dWhy,dbh,dby,hprev = self.forward_backward(inputs, targets, hprev)
-
-        # Update weights
-        for param, dparam in zip([self.Wxh,self.Whh,self.Why,self.bh,self.by],
-                                 [dWxh,dWhh,dWhy,dbh,dby]):
+        loss,dWxh,dWhh,dWhy,dbh,dby,hprev = self.forward_backward(inputs, targets, hprev)
+        for param,dparam in zip([self.Wxh,self.Whh,self.Why,self.bh,self.by],
+                                [dWxh,dWhh,dWhy,dbh,dby]):
             param -= self.learning_rate*dparam
         return hprev, loss
 
-    def save_model(self, path):
+    def save_model(self,path):
+        import numpy as np
         np.save(path, {'Wxh':self.Wxh,'Whh':self.Whh,'Why':self.Why,
-                       'bh':self.bh,'by':self.by,
-                       'vocab':self.vocab})
+                       'bh':self.bh,'by':self.by,'vocab':self.vocab})
 
-    def load_model(self, path):
+    def load_model(self,path):
+        import numpy as np
         data = np.load(path, allow_pickle=True).item()
-        self.Wxh, self.Whh, self.Why = data['Wxh'], data['Whh'], data['Why']
-        self.bh, self.by = data['bh'], data['by']
+        self.Wxh,self.Whh,self.Why = data['Wxh'],data['Whh'],data['Why']
+        self.bh,self.by = data['bh'],data['by']
         self.vocab = data['vocab']
         self.char_to_ix = {c:i for i,c in enumerate(self.vocab)}
         self.ix_to_char = {i:c for i,c in enumerate(self.vocab)}
