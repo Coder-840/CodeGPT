@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import os
 import numpy as np
-from token_rnn import TokenRNN
+from src.token_rnn import TokenRNN
 
 app = Flask(__name__, template_folder="../frontend")
 
