@@ -1,8 +1,0 @@
-for i in range(10):
-    print(i)
-def hello():
-    print("Hello World")
-list[::-1]
-import math
-if x > 0:
-    print("positive")
