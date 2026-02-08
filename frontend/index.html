@@ -1,109 +1,99 @@
-<!-- File: frontend/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Scratch Coding AI</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        #chat-container {
-            background: white;
-            width: 500px;
-            height: 600px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        #chatbox {
-            flex: 1;
-            padding: 15px;
-            overflow-y: scroll;
-            display: flex;
-            flex-direction: column;
-        }
-        .message {
-            max-width: 80%;
-            margin-bottom: 10px;
-            padding: 10px 15px;
-            border-radius: 20px;
-            word-wrap: break-word;
-        }
-        .user {
-            align-self: flex-end;
-            background: #0084ff;
-            color: white;
-        }
-        .ai {
-            align-self: flex-start;
-            background: #e5e5ea;
-            color: black;
-        }
-        #input-container {
-            display: flex;
-            border-top: 1px solid #ccc;
-        }
-        #userinput {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 0 0 0 10px;
-            font-size: 16px;
-        }
-        #send-btn {
-            padding: 10px 20px;
-            border: none;
-            background: #0084ff;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 0 0 10px 0;
-        }
-        #send-btn:hover {
-            background: #006bbf;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>AI Coder</title>
+<style>
+body {
+  margin: 0;
+  background: #0f0f0f;
+  font-family: monospace;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+#chat {
+  width: 520px;
+  height: 640px;
+  background: #1e1e1e;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+}
+#messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}
+.msg {
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+}
+.user {
+  background: #2563eb;
+  color: white;
+  align-self: flex-end;
+}
+.ai {
+  background: #2a2a2a;
+  color: #dcdcdc;
+}
+#input {
+  display: flex;
+}
+input {
+  flex: 1;
+  padding: 10px;
+  background: #111;
+  border: none;
+  color: white;
+}
+button {
+  padding: 10px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+</style>
 </head>
 <body>
-    <div id="chat-container">
-        <div id="chatbox"></div>
-        <div id="input-container">
-            <input type="text" id="userinput" placeholder="Type coding question..." onkeypress="if(event.key==='Enter'){sendMessage();}">
-            <button id="send-btn" onclick="sendMessage()">Send</button>
-        </div>
-    </div>
+<div id="chat">
+  <div id="messages"></div>
+  <div id="input">
+    <input id="text" placeholder="Ask for code..." />
+    <button onclick="send()">Send</button>
+  </div>
+</div>
 
-    <script>
-        async function sendMessage() {
-            let input = document.getElementById("userinput").value;
-            if(!input) return;
-            appendMessage("You", input);
-            document.getElementById("userinput").value = "";
-            let res = await fetch("/chat", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({message: input})
-            });
-            let data = await res.json();
-            appendMessage("AI", data.response);
-        }
+<script>
+async function send() {
+  const input = document.getElementById("text");
+  const msg = input.value.trim();
+  if (!msg) return;
 
-        function appendMessage(sender, text) {
-            let chatbox = document.getElementById("chatbox");
-            let msg = document.createElement("div");
-            msg.classList.add("message");
-            msg.classList.add(sender === "You" ? "user" : "ai");
-            msg.textContent = text;
-            chatbox.appendChild(msg);
-            chatbox.scrollTop = chatbox.scrollHeight;
-        }
-    </script>
+  add("user", msg);
+  input.value = "";
+
+  const res = await fetch("/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({message: msg})
+  });
+
+  const data = await res.json();
+  add("ai", data.response);
+}
+
+function add(type, text) {
+  const div = document.createElement("div");
+  div.className = "msg " + type;
+  div.textContent = text;
+  document.getElementById("messages").appendChild(div);
+}
+</script>
 </body>
 </html>
